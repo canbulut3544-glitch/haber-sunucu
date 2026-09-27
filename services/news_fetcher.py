@@ -8,6 +8,7 @@ import models
 
 logger = logging.getLogger(__name__)
 
+# Curated, reputable, neutral, and open free financial/economic RSS feeds
 FEEDS = [
     {
         "name": "Bloomberg HT",
@@ -16,22 +17,28 @@ FEEDS = [
         "source": "Bloomberg HT"
     },
     {
-        "name": "AA Finans",
-        "category": "Turkey",
-        "url": "https://www.aa.com.tr/tr/rss/default?cat=ekonomi",
-        "source": "AA Finans"
+        "name": "Euronews Türkçe",
+        "category": "World",
+        "url": "https://tr.euronews.com/rss?level=theme&name=business",
+        "source": "Euronews"
     },
     {
-        "name": "TRT Ekonomi",
-        "category": "Turkey",
-        "url": "https://www.trthaber.com/ekonomi_articles.rss",
-        "source": "TRT Ekonomi"
+        "name": "BBC Türkçe Ekonomi",
+        "category": "World",
+        "url": "https://feeds.bbci.co.uk/turkce/rss.xml",
+        "source": "BBC Türkçe"
     },
     {
         "name": "Investing.com TR",
         "category": "Turkey",
         "url": "https://tr.investing.com/rss/news_25.rss",
         "source": "Investing.com"
+    },
+    {
+        "name": "AA Finans",
+        "category": "Turkey",
+        "url": "https://www.aa.com.tr/tr/rss/default?cat=ekonomi",
+        "source": "AA Finans"
     },
     {
         "name": "Dünya Gazetesi",
@@ -44,6 +51,18 @@ FEEDS = [
         "category": "World",
         "url": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664",
         "source": "CNBC"
+    },
+    {
+        "name": "Yahoo Finance",
+        "category": "World",
+        "url": "https://finance.yahoo.com/news/rssindex",
+        "source": "Yahoo Finance"
+    },
+    {
+        "name": "TRT Ekonomi",
+        "category": "Turkey",
+        "url": "https://www.trthaber.com/ekonomi_articles.rss",
+        "source": "TRT Ekonomi"
     }
 ]
 
@@ -54,7 +73,7 @@ def clean_html(text: str) -> str:
     return clean.replace('&quot;', '"').replace('&amp;', '&').replace('&apos;', "'").replace('&nbsp;', ' ').strip()
 
 def fetch_and_store_mock_news(db: Session):
-    logger.info("Fetching real financial news from 6 open RSS feeds...")
+    logger.info("Fetching real financial news from open & neutral RSS feeds...")
     
     # Clean up old test mock articles with example.com
     try:
@@ -101,7 +120,7 @@ def fetch_and_store_mock_news(db: Session):
                         
                     title = clean_html(title_elem.text)
                     link = link_elem.text.strip()
-                    desc = clean_html(desc_elem.text) if desc_elem is not None and desc_elem.text else f"{feed['source']} son dakika finans ve ekonomi haberi."
+                    desc = clean_html(desc_elem.text) if desc_elem is not None and desc_elem.text else f"{feed['source']} son dakika tarafsız finans ve ekonomi analizi."
                     
                     # Avoid duplicates
                     existing = db.query(models.Article).filter((models.Article.url == link) | (models.Article.title == title)).first()
