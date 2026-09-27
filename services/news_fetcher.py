@@ -16,6 +16,24 @@ FEEDS = [
         "source": "Bloomberg HT"
     },
     {
+        "name": "AA Finans",
+        "category": "Turkey",
+        "url": "https://www.aa.com.tr/tr/rss/default?cat=ekonomi",
+        "source": "AA Finans"
+    },
+    {
+        "name": "TRT Ekonomi",
+        "category": "Turkey",
+        "url": "https://www.trthaber.com/ekonomi_articles.rss",
+        "source": "TRT Ekonomi"
+    },
+    {
+        "name": "Investing.com TR",
+        "category": "Turkey",
+        "url": "https://tr.investing.com/rss/news_25.rss",
+        "source": "Investing.com"
+    },
+    {
         "name": "Dünya Gazetesi",
         "category": "Turkey",
         "url": "https://www.dunya.com/rss",
@@ -36,7 +54,7 @@ def clean_html(text: str) -> str:
     return clean.replace('&quot;', '"').replace('&amp;', '&').replace('&apos;', "'").replace('&nbsp;', ' ').strip()
 
 def fetch_and_store_mock_news(db: Session):
-    logger.info("Fetching real financial news from RSS feeds...")
+    logger.info("Fetching real financial news from 6 open RSS feeds...")
     
     # Clean up old test mock articles with example.com
     try:
@@ -64,8 +82,11 @@ def fetch_and_store_mock_news(db: Session):
     new_articles_count = 0
     for feed in FEEDS:
         try:
-            req = urllib.request.Request(feed["url"], headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-            with urllib.request.urlopen(req, timeout=12) as response:
+            req = urllib.request.Request(
+                feed["url"],
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'}
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
                 xml_data = response.read()
                 root = ET.fromstring(xml_data)
                 items = root.findall('.//item')
@@ -80,7 +101,7 @@ def fetch_and_store_mock_news(db: Session):
                         
                     title = clean_html(title_elem.text)
                     link = link_elem.text.strip()
-                    desc = clean_html(desc_elem.text) if desc_elem is not None and desc_elem.text else f"{feed['source']} son dakika finans ve piyasa gelişmesi."
+                    desc = clean_html(desc_elem.text) if desc_elem is not None and desc_elem.text else f"{feed['source']} son dakika finans ve ekonomi haberi."
                     
                     # Avoid duplicates
                     existing = db.query(models.Article).filter((models.Article.url == link) | (models.Article.title == title)).first()
@@ -92,14 +113,15 @@ def fetch_and_store_mock_news(db: Session):
                             source=feed["source"],
                             published_at=datetime.now(timezone.utc),
                             category_id=cat_map.get(feed["category"], cat_map["Turkey"]),
-                            is_breaking=(idx == 0) # mark the latest as breaking for ticker
+                            is_breaking=(idx == 0) # mark top article as breaking for ticker
                         )
                         db.add(article)
                         new_articles_count += 1
                         
                 db.commit()
+                logger.info(f"[{feed['source']}] successfully imported.")
         except Exception as e:
-            logger.error(f"Error fetching feed {feed['name']}: {e}")
+            logger.warning(f"Error fetching feed {feed['name']}: {e}")
             db.rollback()
 
-    logger.info(f"Live news update complete. Added {new_articles_count} new articles.")
+    logger.info(f"All feeds update complete. Added {new_articles_count} new articles.")
